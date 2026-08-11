@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Month — Habit & Journal Tracker</title>
+<style>
+  :root{
+    --paper:#f7f3ea;
+    --paper-line:#e6ddc8;
+    --ink:#3b352c;
+    --ink-soft:#8a8171;
+    --accent:#a5734a;
+    --accent-soft:#e8dcc9;
+    --good:#7c9473;
+    --card:#fffdf7;
+    --shadow: 0 2px 6px rgba(59,53,44,0.08);
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: Georgia, 'Times New Roman', serif;
+    background: var(--paper);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--paper) 0px,
+      var(--paper) 34px,
+      var(--paper-line) 35px
+    );
+    color: var(--ink);
+    min-height:100vh;
+    padding-bottom: 40px;
+  }
+  header{
+    text-align:center;
+    padding: 28px 16px 10px;
+  }
+  header h1{
+    font-size: 1.6rem;
+    margin:0 0 4px;
+    letter-spacing: 0.5px;
+  }
+  header p{
+    margin:0;
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    font-style: italic;
+  }
+
+  /* ---------- Progress Summary ---------- */
+  .summary{
+    max-width: 680px;
+    margin: 18px auto;
+    padding: 16px 18px;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .summary h2{
+    margin:0 0 10px;
+    font-size: 1.05rem;
+    border-bottom: 1px dashed var(--paper-line);
+    padding-bottom: 6px;
+  }
+  .summary-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+  }
+  .summary-item{
+    background: var(--accent-soft);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+  }
+  .summary-item .label{
+    color: var(--ink-soft);
+    display:block;
+    font-size: 0.75rem;
+    margin-bottom: 2px;
+  }
+  .summary-item .value{
+    font-weight:bold;
+    font-size: 1rem;
+  }
+
+  /* ---------- Calendar ---------- */
+  .calendar-wrap{
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 12px;
+  }
+  .week{
+    margin-bottom: 16px;
+  }
+  .week h3{
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin: 10px 4px 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .days-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
+  .day-card{
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 10px 12px;
+    cursor:pointer;
+    border: 1px solid transparent;
+    transition: transform 0.12s ease, border-color 0.12s ease;
+  }
+  .day-card:hover{
+    transform: translateY(-2px);
+    border-color: var(--accent);
+  }
+  .day-card.today{
+    border-color: var(--good);
+  }
+  .day-card .date-num{
+    font-size: 1.1rem;
+    font-weight:bold;
+  }
+  .day-card .date-sub{
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .habit-dots{
+    display:flex;
+    gap: 5px;
+    margin-top: 4px;
+  }
+  .dot{
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--paper-line);
+  }
+  .dot.on{
+    background: var(--good);
+  }
+  .day-card .mini-info{
+    margin-top: 6px;
+    font-size: 0.7rem;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    display:none;
+    position: fixed;
+    top:0; left:0; right:0; bottom:0;
+    background: rgba(59,53,44,0.45);
+    z-index: 100;
+    align-items:center;
+    justify-content:center;
+    padding: 14px;
+  }
+  .modal-overlay.open{
+    display:flex;
+  }
+  .modal{
+    background: var(--paper);
+    background-image: repeating-linear-gradient(
+      to bottom, var(--paper) 0px, var(--paper) 30px, var(--paper-line) 31px
+    );
+    border-radius: var(--radius);
+    max-width: 460px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    position: relative;
+  }
+  .modal h2{
+    margin: 0 0 2px;
+    font-size: 1.2rem;
+  }
+  .modal .modal-sub{
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+    margin-bottom: 14px;
+  }
+  .close-btn{
+    position:absolute;
+    top: 12px; right: 14px;
+    background:none;
+    border:none;
+    font-size: 1.3rem;
+    cursor:pointer;
+    color: var(--ink-soft);
+    line-height:1;
+  }
+  .section-block{
+    background: var(--card);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .section-block h3{
+    margin: 0 0 8px;
+    font-size: 0.9rem;
+    color: var(--accent);
+  }
+  .habit-row{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 0.92rem;
+  }
+  .habit-row input[type="checkbox"]{
+    width: 17px;
+    height: 17px;
+    accent-color: var(--good);
+  }
+  .sleep-times{
+    display:flex;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .sleep-times label{
+    flex:1;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+  }
+  .sleep-times input[type="time"]{
+    width:100%;
+    margin-top: 3px;
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px solid var(--paper-line);
+    font-family: inherit;
+  }
+  .sleep-duration{
+    font-size: 0.85rem;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .stars{
+    font-size: 1.4rem;
+    letter-spacing: 4px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .stars span{
+    color: var(--paper-line);
+  }
+  .stars span.filled{
+    color: var(--accent);
+  }
+  textarea{
+    width:100%;
+    min-height: 90px;
+    border-radius: 8px;
+    border: 1px solid var(--paper-line);
+    padding: 8px;
+    font-family: inherit;
+    font-size: 0.92rem;
+    resize: vertical;
+    background: #fffefb;
+  }
+  .save-note{
+    text-align:center;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-top: 4px;
+    min-height: 16px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📓 My Month</h1>
+  <p>August 15 — September 11, 2026</p>
+</header>
+
+<!-- Monthly progress summary, refreshed after every save -->
+<div class="summary" id="summary"></div>
+
+<!-- Calendar grid, rendered as 4 weeks -->
+<div class="calendar-wrap" id="calendarWrap"></div>
+
+<!-- Modal for viewing / editing a single day -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <button class="close-btn" id="closeModalBtn">&times;</button>
+    <h2 id="modalDateTitle"></h2>
+    <div class="modal-sub" id="modalDateSub"></div>
+
+    <div class="section-block">
+      <h3>Habits</h3>
+      <div id="habitList"></div>
+    </div>
+
+    <div class="section-block">
+      <h3>Sleep</h3>
+      <div class="sleep-times">
+        <label>Bedtime
+          <input type="time" id="bedtimeInput">
+        </label>
+        <label>Wake-up
+          <input type="time" id="wakeInput">
+        </label>
+      </div>
+      <div class="sleep-duration" id="sleepDurationText">Duration: —</div>
+      <div>Quality:
+        <span class="stars" id="starsRow">
+          <span data-val="1">★</span><span data-val="2">★</span><span data-val="3">★</span><span data-val="4">★</span><span data-val="5">★</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="section-block">
+      <h3>Today Was a Good Day...</h3>
+      <textarea id="diaryText" placeholder="Write a short reflection about your day..."></textarea>
+    </div>
+
+    <div class="save-note" id="saveNote"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG: habit list + date range for the tracker
+   ============================================================ */
+const HABITS = ["Study German", "Work on Project", "Read Book"];
+const START_DATE = new Date(2026, 7, 15); // Aug 15, 2026 (month is 0-indexed)
+const TOTAL_DAYS = 28;
+const STORAGE_KEY = "habitTrackerData_v1";
+
+/* ============================================================
+   DATA LAYER: load/save from localStorage
+   Data shape: { "2026-08-08": { habits: {"Study German": true, ...},
+                                  bedtime: "23:00", wake: "07:00",
+                                  quality: 4, diary: "text..." }, ... }
+   ============================================================ */
+function loadData(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  return raw ? JSON.parse(raw) : {};
+}
+function saveData(data){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+let appData = loadData();
+let currentDayKey = null; // which day is currently open in the modal
+
+/* ============================================================
+   DATE HELPERS
+   ============================================================ */
+function formatDateKey(date){
+  // Returns "YYYY-MM-DD" used as the storage key for each day
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+function addDays(date, n){
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() + n);
+  return copy;
+}
+function todayKey(){
+  return formatDateKey(new Date());
+}
+function getDayEntry(key){
+  // Returns the stored entry for a day, or a fresh default object
+  if (!appData[key]){
+    appData[key] = {
+      habits: {},
+      bedtime: "",
+      wake: "",
+      quality: 0,
+      diary: ""
+    };
+  }
+  return appData[key];
+}
+
+/* ============================================================
+   SLEEP DURATION CALCULATION
+   Handles overnight sleep (bedtime PM -> wake AM next day)
+   ============================================================ */
+function calcSleepDuration(bedtime, wake){
+  if (!bedtime || !wake) return null;
+  const [bh, bm] = bedtime.split(":").map(Number);
+  const [wh, wm] = wake.split(":").map(Number);
+  let bedMinutes = bh * 60 + bm;
+  let wakeMinutes = wh * 60 + wm;
+  // If wake time is earlier in the clock than bedtime, assume it's the next day
+  if (wakeMinutes <= bedMinutes){
+    wakeMinutes += 24 * 60;
+  }
+  const totalMinutes = wakeMinutes - bedMinutes;
+  return totalMinutes / 60; // in hours
+}
+function formatDuration(hours){
+  if (hours === null) return "—";
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  return `${h}h ${m}m`;
+}
+
+/* ============================================================
+   RENDER: CALENDAR (4 weeks of 7 days)
+   ============================================================ */
+function renderCalendar(){
+  const wrap = document.getElementById("calendarWrap");
+  wrap.innerHTML = "";
+  const todayStr = todayKey();
+
+  for (let week = 0; week < 4; week++){
+    const weekSection = document.createElement("div");
+    weekSection.className = "week";
+
+    const weekTitle = document.createElement("h3");
+    weekTitle.textContent = `Week ${week + 1}`;
+    weekSection.appendChild(weekTitle);
+
+    const grid = document.createElement("div");
+    grid.className = "days-grid";
+
+    for (let i = 0; i < 7; i++){
+      const dayIndex = week * 7 + i;
+      if (dayIndex >= TOTAL_DAYS) break;
+
+      const date = addDays(START_DATE, dayIndex);
+      const key = formatDateKey(date);
+      const entry = getDayEntry(key);
+
+      const card = document.createElement("div");
+      card.className = "day-card" + (key === todayStr ? " today" : "");
+      card.addEventListener("click", () => openModal(key));
+
+      const dateNum = document.createElement("div");
+      dateNum.className = "date-num";
+      dateNum.textContent = date.getDate();
+
+      const dateSub = document.createElement("div");
+      dateSub.className = "date-sub";
+      dateSub.textContent = date.toLocaleDateString("en-US", { weekday: "short", month: "short" });
+
+      const dotsRow = document.createElement("div");
+      dotsRow.className = "habit-dots";
+      HABITS.forEach(h => {
+        const dot = document.createElement("span");
+        dot.className = "dot" + (entry.habits[h] ? " on" : "");
+        dotsRow.appendChild(dot);
+      });
+
+      const miniInfo = document.createElement("div");
+      miniInfo.className = "mini-info";
+      const dur = calcSleepDuration(entry.bedtime, entry.wake);
+      miniInfo.textContent = dur !== null ? `😴 ${formatDuration(dur)}` : "";
+
+      card.appendChild(dateNum);
+      card.appendChild(dateSub);
+      card.appendChild(dotsRow);
+      card.appendChild(miniInfo);
+      grid.appendChild(card);
+    }
+
+    weekSection.appendChild(grid);
+    wrap.appendChild(weekSection);
+  }
+}
+
+/* ============================================================
+   RENDER: MONTHLY SUMMARY
+   ============================================================ */
+function renderSummary(){
+  const summaryEl = document.getElementById("summary");
+
+  // Count completed days per habit
+  const habitCounts = {};
+  HABITS.forEach(h => habitCounts[h] = 0);
+
+  let sleepDurations = [];
+  let qualityRatings = [];
+
+  for (let i = 0; i < TOTAL_DAYS; i++){
+    const date = addDays(START_DATE, i);
+    const key = formatDateKey(date);
+    const entry = appData[key];
+    if (!entry) continue;
+
+    HABITS.forEach(h => {
+      if (entry.habits[h]) habitCounts[h]++;
+    });
+
+    const dur = calcSleepDuration(entry.bedtime, entry.wake);
+    if (dur !== null) sleepDurations.push(dur);
+
+    if (entry.quality > 0) qualityRatings.push(entry.quality);
+  }
+
+  const avgSleep = sleepDurations.length
+    ? sleepDurations.reduce((a,b) => a+b, 0) / sleepDurations.length
+    : null;
+  const avgQuality = qualityRatings.length
+    ? (qualityRatings.reduce((a,b) => a+b, 0) / qualityRatings.length).toFixed(1)
+    : "—";
+
+  let html = `<h2>Monthly Progress</h2><div class="summary-grid">`;
+  HABITS.forEach(h => {
+    html += `
+      <div class="summary-item">
+        <span class="label">${h}</span>
+        <span class="value">${habitCounts[h]} / ${TOTAL_DAYS} days</span>
+      </div>`;
+  });
+  html += `
+      <div class="summary-item">
+        <span class="label">Avg. Sleep</span>
+        <span class="value">${avgSleep !== null ? formatDuration(avgSleep) : "—"}</span>
+      </div>
+      <div class="summary-item">
+        <span class="label">Avg. Sleep Quality</span>
+        <span class="value">${avgQuality !== "—" ? avgQuality + " ★" : "—"}</span>
+      </div>
+  `;
+  html += `</div>`;
+  summaryEl.innerHTML = html;
+}
+
+/* ============================================================
+   MODAL: open / close / populate
+   ============================================================ */
+const modalOverlay = document.getElementById("modalOverlay");
+const modalDateTitle = document.getElementById("modalDateTitle");
+const modalDateSub = document.getElementById("modalDateSub");
+const habitListEl = document.getElementById("habitList");
+const bedtimeInput = document.getElementById("bedtimeInput");
+const wakeInput = document.getElementById("wakeInput");
+const sleepDurationText = document.getElementById("sleepDurationText");
+const starsRow = document.getElementById("starsRow");
+const diaryText = document.getElementById("diaryText");
+const saveNote = document.getElementById("saveNote");
+
+function openModal(key){
+  currentDayKey = key;
+  const entry = getDayEntry(key);
+  const date = new Date(key + "T00:00:00");
+
+  modalDateTitle.textContent = date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  modalDateSub.textContent = key;
+
+  // Build habit checkboxes
+  habitListEl.innerHTML = "";
+  HABITS.forEach(h => {
+    const row = document.createElement("div");
+    row.className = "habit-row";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.id = "habit_" + h.replace(/\s+/g, "_");
+    checkbox.checked = !!entry.habits[h];
+    checkbox.addEventListener("change", () => {
+      entry.habits[h] = checkbox.checked;
+      persistCurrentDay();
+    });
+
+    const label = document.createElement("label");
+    label.htmlFor = checkbox.id;
+    label.textContent = h;
+
+    row.appendChild(checkbox);
+    row.appendChild(label);
+    habitListEl.appendChild(row);
+  });
+
+  // Sleep fields
+  bedtimeInput.value = entry.bedtime || "";
+  wakeInput.value = entry.wake || "";
+  updateSleepDurationDisplay();
+
+  // Star rating
+  renderStars(entry.quality || 0);
+
+  // Diary
+  diaryText.value = entry.diary || "";
+
+  saveNote.textContent = "";
+  modalOverlay.classList.add("open");
+}
+
+function closeModal(){
+  modalOverlay.classList.remove("open");
+  currentDayKey = null;
+  // Refresh calendar + summary in case anything changed
+  renderCalendar();
+  renderSummary();
+}
+
+function updateSleepDurationDisplay(){
+  const dur = calcSleepDuration(bedtimeInput.value, wakeInput.value);
+  sleepDurationText.textContent = "Duration: " + formatDuration(dur);
+}
+
+function renderStars(activeValue){
+  const stars = starsRow.querySelectorAll("span");
+  stars.forEach(star => {
+    const val = Number(star.dataset.val);
+    star.classList.toggle("filled", val <= activeValue);
+  });
+}
+
+/* Save the current entry to localStorage and show a brief confirmation */
+function persistCurrentDay(){
+  if (!currentDayKey) return;
+  saveData(appData);
+  saveNote.textContent = "Saved ✓";
+  clearTimeout(persistCurrentDay._t);
+  persistCurrentDay._t = setTimeout(() => { saveNote.textContent = ""; }, 1200);
+}
+
+/* ============================================================
+   EVENT LISTENERS for modal inputs
+   ============================================================ */
+document.getElementById("closeModalBtn").addEventListener("click", closeModal);
+
+// Close modal when clicking outside the modal box
+modalOverlay.addEventListener("click", (e) => {
+  if (e.target === modalOverlay) closeModal();
+});
+
+bedtimeInput.addEventListener("change", () => {
+  const entry = getDayEntry(currentDayKey);
+  entry.bedtime = bedtimeInput.value;
+  updateSleepDurationDisplay();
+  persistCurrentDay();
+});
+
+wakeInput.addEventListener("change", () => {
+  const entry = getDayEntry(currentDayKey);
+  entry.wake = wakeInput.value;
+  updateSleepDurationDisplay();
+  persistCurrentDay();
+});
+
+starsRow.addEventListener("click", (e) => {
+  if (e.target.tagName !== "SPAN") return;
+  const val = Number(e.target.dataset.val);
+  const entry = getDayEntry(currentDayKey);
+  entry.quality = val;
+  renderStars(val);
+  persistCurrentDay();
+});
+
+diaryText.addEventListener("input", () => {
+  const entry = getDayEntry(currentDayKey);
+  entry.diary = diaryText.value;
+  persistCurrentDay();
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+renderCalendar();
+renderSummary();
+</script>
+
+</body>
+</html>
